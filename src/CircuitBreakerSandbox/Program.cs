@@ -17,11 +17,14 @@ namespace CircuitBreakerSandbox
         {
             try
             {
-                GetDataFromCache();
+                for (; _count < 10; _count++)
+                {
+                    GetDataFromCache();
+                }
             }
             catch (Exception ex)
             {
-                Debug.Write(ex);
+                Debug.WriteLine(ex);
             }
 
         }
@@ -36,22 +39,28 @@ namespace CircuitBreakerSandbox
             Action<Exception, TimeSpan, Context> onBreak = (exception, timespan, context) =>
             {
                 // turn off redis
+                Debug.WriteLine("Could not reach cache server...");
             };
             Action<Context> onReset = context =>
             {
-
+                Debug.WriteLine("Cache server is back online...");
             };
 
             var breaker = Policy
                 .Handle<Exception>()
-                .CircuitBreaker(1, TimeSpan.FromMinutes(2), onBreak, onReset);
+                .CircuitBreaker(2, TimeSpan.FromMinutes(2), onBreak, onReset);
 
             breaker.Execute(GetItem);
         }
 
         private static void GetItem()
         {
-            throw new Exception("Redis not available...");
+            Debug.WriteLine("Read from cache.");
+
+            if (_count == 5)
+            {
+                throw new Exception("Redis not available...");
+            }
         }
     }
 }
